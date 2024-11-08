@@ -1,16 +1,24 @@
 const InstupmentProduct = require('../Models/InstupmentProductModel');
-const fs = require("fs")
+const fs = require("fs").promises
+const path = require("path")
 
 
 const deleteFile = async (filePath) => {
     try {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath)
+        if (filePath) {
+            const fileToDelete = path.join(__dirname, "..", filePath);
+            await fs.access(fileToDelete); // Check if file exists
+            await fs.unlink(fileToDelete); // Delete the file
+            console.log("Deleted file:", filePath);
         }
-    } catch (error) {
-        console.error('Error deleting file:', error);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log("File not found or already deleted:", filePath);
+        } else {
+            console.error("Error deleting file:", err);
+        }
     }
-}
+};
 const createInstupmentProduct = async (req, res) => {
     try {
         const { category, instupment, productName, productDetails, stainlessDetails, titaniumDetails } = req.body;

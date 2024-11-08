@@ -1,18 +1,24 @@
 const Category = require("../Models/CategoryModel");
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
 const category = require("../Models/CategoryModel");
 const Inplants = require("../Models/InplantsModel");
 const Instument = require("../Models/InstupmentModel");
 
-// Utility function to delete a file
-const deleteFile = (filePath) => {
+const deleteFile = async (filePath) => {
     try {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+        if (filePath) {
+            const fileToDelete = path.join(__dirname, "..", filePath);
+            await fs.access(fileToDelete); // Check if file exists
+            await fs.unlink(fileToDelete); // Delete the file
+            console.log("Deleted file:", filePath);
         }
-    } catch (error) {
-        console.error("Error deleting file:", error);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log("File not found or already deleted:", filePath);
+        } else {
+            console.error("Error deleting file:", err);
+        }
     }
 };
 
@@ -169,7 +175,7 @@ const deleteCategory = async (req, res) => {
                 message: "Category not found"
             });
         }
-        
+
         // Check karein agar koi Inplants ya Instupment is category se related hain ya nahi
         const relatedInplants = await Inplants.findOne({ categoryName: id });
         const relatedInstupment = await Instument.findOne({ categoryName: id });

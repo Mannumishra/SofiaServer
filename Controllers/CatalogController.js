@@ -1,18 +1,24 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const Catalog = require('../Models/CatalogModel');
 
 // Utility function to delete a file if it exists
-const deleteFile = (filePath) => {
+const deleteFile = async (filePath) => {
     try {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+        if (filePath) {
+            const fileToDelete = path.join(__dirname, "..", filePath);
+            await fs.access(fileToDelete); // Check if file exists
+            await fs.unlink(fileToDelete); // Delete the file
+            console.log("Deleted file:", filePath);
         }
     } catch (err) {
-        console.error(`Failed to delete file at ${filePath}:`, err);
+        if (err.code === 'ENOENT') {
+            console.log("File not found or already deleted:", filePath);
+        } else {
+            console.error("Error deleting file:", err);
+        }
     }
 };
-
 // Controller to create a new catalog
 exports.createCatalog = async (req, res) => {
     try {
@@ -31,9 +37,9 @@ exports.createCatalog = async (req, res) => {
             });
         }
         if (!req.files || !req.files.catalogImage || !req.files.catalogPDF) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Image and PDF files are required.' 
+                message: 'Image and PDF files are required.'
             });
         }
         const catalogImagePath = req.files.catalogImage[0].path;
@@ -44,10 +50,10 @@ exports.createCatalog = async (req, res) => {
             catalogPDF: catalogPDFPath
         });
         await catalog.save();
-        res.status(201).json({ 
+        res.status(201).json({
             success: true,
-            message: 'Catalog created successfully!', 
-            catalog 
+            message: 'Catalog created successfully!',
+            catalog
         });
     } catch (error) {
         console.error('Error creating catalog:', error);
@@ -60,10 +66,10 @@ exports.createCatalog = async (req, res) => {
             }
         }
 
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Internal server error', 
-            error 
+            message: 'Internal server error',
+            error
         });
     }
 };
@@ -71,13 +77,13 @@ exports.createCatalog = async (req, res) => {
 exports.getAllCatalogs = async (req, res) => {
     try {
         const catalogs = await Catalog.find();
-        if(!catalogs){
+        if (!catalogs) {
             return res.status(404).json({
-                success:false,
-                message:"Record not found"
+                success: false,
+                message: "Record not found"
             })
         }
-        res.status(200).json({ success: true, data:catalogs });
+        res.status(200).json({ success: true, data: catalogs });
     } catch (error) {
         console.error('Error fetching catalogs:', error);
         res.status(500).json({ success: false, message: 'Internal server error', error });
@@ -90,7 +96,7 @@ exports.getSingleCatalog = async (req, res) => {
         if (!catalog) {
             return res.status(404).json({ success: false, message: 'Catalog not found' });
         }
-        res.status(200).json({ success: true, data:catalog });
+        res.status(200).json({ success: true, data: catalog });
     } catch (error) {
         console.error('Error fetching catalog:', error);
         res.status(500).json({ success: false, message: 'Internal server error', error });
